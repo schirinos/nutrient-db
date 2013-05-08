@@ -3,6 +3,7 @@
 
 import sqlite3
 import argparse
+import pymongo
 
 class NutrientDB:
 	"""Parses USDA flat files and converts them into an sqlite database"""
@@ -64,7 +65,16 @@ class NutrientDB:
 		self.create_table_stmt["datsrcln"] = '''DROP TABLE IF EXISTS datsrcln; CREATE TABLE datsrcln 
 									(NDB_No, Nutr_No, DataSrc_ID);
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
-									
+		
+	def export_mongo(self, client):		
+		"""Export nutrient data as json into mongodb"""		
+		pass
+		# Query db for all foods
+		#for row in self.database.execute('''select '''):
+
+			# Convert ingredient into json document
+
+			# Insert into mongo collection			
 
 	def has_data(self):
 		"""Queries the database to see if there is any data in it."""
@@ -129,25 +139,31 @@ def main():
 	#parser.add_argument('--sum', dest='accumulate', help='sum the integers (default: find the max)')
 	#args = parser.parse_args()
 
+	# Path to flat files
+	path = 'data/sr25/'
+
 	# Initialize nutrient database
 	nutrients = NutrientDB()
 
 	# Parse files
 	if (not nutrients.has_data()):
 		print "Refreshing database from flat files..."
-		nutrients.refresh('FOOD_DES.txt', 'food_des')
-		nutrients.refresh('FD_GROUP.txt', 'fd_group')
-		nutrients.refresh('LANGUAL.txt', 'langual')
-		nutrients.refresh('LANGDESC.txt', 'langdesc')
-		nutrients.refresh('LANGDESC.txt', 'langdesc')
-		nutrients.refresh('NUT_DATA.txt', 'nut_data')
-		nutrients.refresh('NUTR_DEF.txt', 'nutr_def')
-		nutrients.refresh('SRC_CD.txt', 'src_cd')
-		nutrients.refresh('DERIV_CD.txt', 'deriv_cd')
-		nutrients.refresh('WEIGHT.txt', 'weight')
-		nutrients.refresh('FOOTNOTE.txt', 'footnote')
-		nutrients.refresh('DATA_SRC.txt', 'data_src')
-		nutrients.refresh('DATSRCLN.txt', 'datsrcln')
+		nutrients.refresh(path + 'FOOD_DES.txt', 'food_des')
+		nutrients.refresh(path + 'FD_GROUP.txt', 'fd_group')
+		nutrients.refresh(path + 'LANGUAL.txt', 'langual')
+		nutrients.refresh(path + 'LANGDESC.txt', 'langdesc')
+		nutrients.refresh(path + 'LANGDESC.txt', 'langdesc')
+		nutrients.refresh(path + 'NUT_DATA.txt', 'nut_data')
+		nutrients.refresh(path + 'NUTR_DEF.txt', 'nutr_def')
+		nutrients.refresh(path + 'SRC_CD.txt', 'src_cd')
+		nutrients.refresh(path + 'DERIV_CD.txt', 'deriv_cd')
+		nutrients.refresh(path + 'WEIGHT.txt', 'weight')
+		nutrients.refresh(path + 'FOOTNOTE.txt', 'footnote')
+		nutrients.refresh(path + 'DATA_SRC.txt', 'data_src')
+		nutrients.refresh(path + 'DATSRCLN.txt', 'datsrcln')
+
+	# Export each food item as json document into a mongodb
+	#nutrients.export_mongo(pymongo.MongoClient('localhost', 27017))
 
 # Only execute if calling file directly
 if __name__=="__main__":
