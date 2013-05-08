@@ -40,6 +40,30 @@ class NutrientDB:
 		self.create_table_stmt["nutr_def"] = '''DROP TABLE IF EXISTS nutr_def; CREATE TABLE nutr_def 
 									(Nutr_No, Units, Tagname, NutrDesc, Num_Dec, SR_Order);
 									CREATE UNIQUE INDEX nutr_def_Nutr_No_idx ON nutr_def (Nutr_No)'''
+
+		self.create_table_stmt["src_cd"] = '''DROP TABLE IF EXISTS src_cd; CREATE TABLE src_cd 
+									(Src_Cd, SrcCd_Desc);
+									CREATE UNIQUE INDEX src_cd_Src_Cd_idx ON src_cd (Src_Cd)'''
+
+		self.create_table_stmt["deriv_cd"] = '''DROP TABLE IF EXISTS deriv_cd; CREATE TABLE deriv_cd 
+									(Deriv_Cd, Deriv_Desc);
+									CREATE UNIQUE INDEX deriv_cd_Deriv_Cd_idx ON deriv_cd (Deriv_Cd)'''
+
+		self.create_table_stmt["weight"] = '''DROP TABLE IF EXISTS weight; CREATE TABLE weight 
+									(NDB_No, Seq, Amount, Msre_Desc, Gm_Wgt, Num_Data_Pts, Std_Dev);
+									CREATE INDEX weight_NDB_No_idx ON weight (NDB_No)'''
+
+		self.create_table_stmt["footnote"] = '''DROP TABLE IF EXISTS footnote; CREATE TABLE footnote 
+									(NDB_No, Footnt_No, Footnt_Typ, Nutr_No, Footnt_Txt);
+									CREATE INDEX footnote_NDB_No_idx ON footnote (NDB_No)'''
+
+		self.create_table_stmt["data_src"] = '''DROP TABLE IF EXISTS data_src; CREATE TABLE data_src 
+									(DataSrc_ID, Authors, Title, Year, Journal, Vol_City, Issue_State, Start_Page, End_Page);
+									CREATE UNIQUE INDEX data_src_DataSrc_ID_idx ON data_src (DataSrc_ID)'''
+
+		self.create_table_stmt["datsrcln"] = '''DROP TABLE IF EXISTS datsrcln; CREATE TABLE datsrcln 
+									(NDB_No, Nutr_No, DataSrc_ID);
+									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 									
 
 	def insert_row(self, cursor, datatype, fields):
@@ -98,6 +122,12 @@ def main():
 	nutrients.refresh('LANGDESC.txt', 'langdesc')
 	nutrients.refresh('NUT_DATA.txt', 'nut_data')
 	nutrients.refresh('NUTR_DEF.txt', 'nutr_def')
+	nutrients.refresh('SRC_CD.txt', 'src_cd')
+	nutrients.refresh('DERIV_CD.txt', 'deriv_cd')
+	nutrients.refresh('WEIGHT.txt', 'weight')
+	nutrients.refresh('FOOTNOTE.txt', 'footnote')
+	nutrients.refresh('DATA_SRC.txt', 'data_src')
+	nutrients.refresh('DATSRCLN.txt', 'datsrcln')
 
 # Only execute if calling file directly
 if __name__=="__main__":
