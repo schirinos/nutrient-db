@@ -66,6 +66,24 @@ class NutrientDB:
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 									
 
+	def has_data(self):
+		"""Queries the database to see if there is any data in it."""
+
+		# Init database cursor
+		cursor = self.database.cursor()
+		 
+		# Try getting one row of food descriptions table
+		try:
+			if (cursor.execute("select * from food_des limit 1").fetchone() is None):
+				return False
+			else:
+				return True
+		except sqlite3.OperationalError, e:
+			return False
+		except Exception, e:
+			return False
+		
+
 	def insert_row(self, cursor, datatype, fields):
 		"""Inserts a row of data into a specific table based on passed datatype"""
 
@@ -115,19 +133,21 @@ def main():
 	nutrients = NutrientDB()
 
 	# Parse files
-	nutrients.refresh('FOOD_DES.txt', 'food_des')
-	nutrients.refresh('FD_GROUP.txt', 'fd_group')
-	nutrients.refresh('LANGUAL.txt', 'langual')
-	nutrients.refresh('LANGDESC.txt', 'langdesc')
-	nutrients.refresh('LANGDESC.txt', 'langdesc')
-	nutrients.refresh('NUT_DATA.txt', 'nut_data')
-	nutrients.refresh('NUTR_DEF.txt', 'nutr_def')
-	nutrients.refresh('SRC_CD.txt', 'src_cd')
-	nutrients.refresh('DERIV_CD.txt', 'deriv_cd')
-	nutrients.refresh('WEIGHT.txt', 'weight')
-	nutrients.refresh('FOOTNOTE.txt', 'footnote')
-	nutrients.refresh('DATA_SRC.txt', 'data_src')
-	nutrients.refresh('DATSRCLN.txt', 'datsrcln')
+	if (not nutrients.has_data()):
+		print "Refreshing database from flat files..."
+		nutrients.refresh('FOOD_DES.txt', 'food_des')
+		nutrients.refresh('FD_GROUP.txt', 'fd_group')
+		nutrients.refresh('LANGUAL.txt', 'langual')
+		nutrients.refresh('LANGDESC.txt', 'langdesc')
+		nutrients.refresh('LANGDESC.txt', 'langdesc')
+		nutrients.refresh('NUT_DATA.txt', 'nut_data')
+		nutrients.refresh('NUTR_DEF.txt', 'nutr_def')
+		nutrients.refresh('SRC_CD.txt', 'src_cd')
+		nutrients.refresh('DERIV_CD.txt', 'deriv_cd')
+		nutrients.refresh('WEIGHT.txt', 'weight')
+		nutrients.refresh('FOOTNOTE.txt', 'footnote')
+		nutrients.refresh('DATA_SRC.txt', 'data_src')
+		nutrients.refresh('DATSRCLN.txt', 'datsrcln')
 
 # Only execute if calling file directly
 if __name__=="__main__":
