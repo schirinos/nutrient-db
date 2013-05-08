@@ -1,6 +1,8 @@
 #!/usr/bin/python
 """Parses USDA flat files and converts them into an sqlite database"""
 
+import os
+import sys
 import sqlite3
 import argparse
 import pymongo
@@ -8,14 +10,11 @@ import pymongo
 class NutrientDB:
 	"""Parses USDA flat files and converts them into an sqlite database"""
 
-	def __init__(self, database=None):
+	def __init__(self, database_name='nutrients.db'):
 		"""Initializes connection to database"""
 
-		# Set default database file if not set
-		if database is None:
-			self.database = sqlite3.connect('nutrients.db')
-		else :
-			self.database = database
+		# Connect to sqlite database
+		self.database = sqlite3.connect(database_name)
 
 		# Create table statements
 		self.create_table_stmt = {}
@@ -67,14 +66,52 @@ class NutrientDB:
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 		
 	def export_mongo(self, client):		
-		"""Export nutrient data as json into mongodb"""		
-		pass
-		# Query db for all foods
-		#for row in self.database.execute('''select '''):
+		"""Export nutrient data as json into mongodb"""	
+		print "trying mongo export"	
 
-			# Convert ingredient into json document
+		# Iterate through each food item and build a full nutrient json document
+		for food in self.database.execute('''
+				select * from food_des, fd_group where food_des.FdGrp_Cd = fd_group.FdGrp_Cd'''):
+			# Store unique identifier for the food
+			ndb_no = food[0]
 
-			# Insert into mongo collection			
+			# Get all the nutrients in the food
+			for nutrient in self.database.execute('''
+				select * from nut_data, nutr_def 
+				left join src_cd on nut_data.Src_Cd = src_cd.Src_Cd
+				left join deriv_cd on nut_data.Deriv_Cd = deriv_cd.Deriv_Cd
+				where nut_data.Nutr_No = nutr_def.Nutr_No and nut_data.NDB_No = ?''', [ndb_no]):
+				#print nutrient
+				pass
+				
+				# Get the sources of nutrient data
+				source_ids = []
+				for source in self.database.execute(''' 
+					select * from datsrcln where NDB_No = ? and Nutr_No = ?''', [ndb_no, nutrient[1]]):
+					source_ids.append(source[2])
+
+			# Get all footnotes for the food
+			for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no]):
+				#print footnote
+				pass
+
+			# Get gram weight for the food
+			for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no]):
+				#print gramweight
+				pass
+
+			# Get language variants for the food
+			for langual in self.database.execute('''
+				select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code and langual.NDB_No = ?''', [ndb_no]):
+				#print langual
+				pass
+
+			# Store info in a dictionry that we will insert into mongo
+			document = { "description": food['Long_Desc']}
+
+			print document
+			# Insert into mongo collection
+			break		
 
 	def has_data(self):
 		"""Queries the database to see if there is any data in it."""
@@ -112,6 +149,10 @@ class NutrientDB:
 		# Refresh the table definition
 		self.create_table(cursor, datatype)
 
+		# Print out which file we are working on
+		sys.stdout.write("Parsing " + filename + '...')
+		sys.stdout.flush()
+
 		# Iterate through each line of the file
 		with open(filename, 'rU') as f:
 			for line in f:
@@ -125,6 +166,9 @@ class NutrientDB:
 		# Commit changes to file
 		self.database.commit()
 
+		# Done message
+		print "Done"
+
 	def create_table(self, cursor, datatype):
 		"""Creates a new table in the database based on the datatype. Drops existing table if there is one."""
 		
@@ -135,15 +179,28 @@ def main():
 	"""Parses USDA flat files and converts them into an sqlite database"""
 
 	# Setup command line parsing
-	#parser = argparse.ArgumentParser(description='Process some integers.')
-	#parser.add_argument('--sum', dest='accumulate', help='sum the integers (default: find the max)')
-	#args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='''Parses USDA nutrient database flat files and coverts it into SQLite database. 
+		Also provides options for exporting the nutrient data from the SQLite database into other formats.''')
+	
+	# Add arguments
+	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
+	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
+	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data we skip flat file parsing. (default: False)')
+	parser.add_argument('-m', '--mongo', dest='mongo', action='store_true', help='Flag that tells whether to try and export data into a mongo db collection.')
+
+	# Parse the arguments
+	args = vars(parser.parse_args())
 
 	# Path to flat files
-	path = 'data/sr25/'
+	path = args['path']
+
+	# Check if we need to blow away original db
+	if (args['force'] and os.path.exists(args['database'])):
+		# Remove existing nutrients database
+		os.remove(args['database'])
 
 	# Initialize nutrient database
-	nutrients = NutrientDB()
+	nutrients = NutrientDB(args['database'])
 
 	# Parse files
 	if (not nutrients.has_data()):
@@ -163,7 +220,8 @@ def main():
 		nutrients.refresh(path + 'DATSRCLN.txt', 'datsrcln')
 
 	# Export each food item as json document into a mongodb
-	#nutrients.export_mongo(pymongo.MongoClient('localhost', 27017))
+	if args['mongo']:
+		nutrients.export_mongo(pymongo.MongoClient('localhost', 27017))
 
 # Only execute if calling file directly
 if __name__=="__main__":
