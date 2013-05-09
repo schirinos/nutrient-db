@@ -67,58 +67,145 @@ class NutrientDB:
 		self.create_table_stmt["datsrcln"] = '''DROP TABLE IF EXISTS datsrcln; CREATE TABLE datsrcln 
 									(NDB_No, Nutr_No, DataSrc_ID);
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
-		
+	
 	def export_mongo(self, client):		
 		"""Export nutrient data as json into mongodb"""	
-		print "trying mongo export"	
 
 		# Iterate through each food item and build a full nutrient json document
 		for food in self.database.execute('''
 				select * from food_des, fd_group where food_des.FdGrp_Cd = fd_group.FdGrp_Cd'''):
+
 			# Store unique identifier for the food
-			ndb_no = food[0]
+			ndb_no = food['NDB_No']
 
-			# Get all the nutrients in the food
-			for nutrient in self.database.execute('''
-				select * from nut_data, nutr_def 
-				left join src_cd on nut_data.Src_Cd = src_cd.Src_Cd
-				left join deriv_cd on nut_data.Deriv_Cd = deriv_cd.Deriv_Cd
-				where nut_data.Nutr_No = nutr_def.Nutr_No and nut_data.NDB_No = ?''', [ndb_no]):
-				#print nutrient
-				pass
-				
-				# Get the sources of nutrient data
-				source_ids = []
-				for source in self.database.execute(''' 
-					select * from datsrcln where NDB_No = ? and Nutr_No = ?''', [ndb_no, nutrient[1]]):
-					source_ids.append(source[2])
-
-			# Get all footnotes for the food
-			for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no]):
-				#print footnote
-				pass
-
-			# Get gram weight for the food
-			for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no]):
-				#print gramweight
-				pass
-
-			# Get language variants for the food
-			for langual in self.database.execute('''
-				select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code and langual.NDB_No = ?''', [ndb_no]):
-				#print langual
-				pass
-
-			# Store info in a dictionry that we will insert into mongo
+			# Store base food info as a dictionary (we will later insert this document into mongo)
 			document = { 
-				"description": food['Long_Desc'],
-				"short_description": food['Shrt_Desc'],
-				'group': food['FdGrp_Desc']
+				"ndb_no": food['NDB_No'],
+				"description": {
+					"short": food['Shrt_Desc'],
+					"long": food['Long_Desc'],
+					'common': food['ComName'],
+					'scientific': food['SciName']
+				},
+				'refuse':{
+					'description': food['Ref_desc'],
+					'percentage': food['Refuse']
+				},
+				'group': food['FdGrp_Desc'],
+				'manufacturer': food['ManufacName'],
+				'factors': {
+					'nitrogen': food['N_Factor'],
+					'protein': food['Pro_Factor'],
+					'fat': food['Fat_Factor'],
+					'carb': food['CHO_Factor']
+				},
+				'meta': {
+					'usda': {
+						'fndds_survey': food['Survey']
+					}
+				}
 			}
+
+			# Add nutrient info
+			document['nutrients'] = self.query_nutrients(ndb_no)
+
+			# Add portion gram converstion weights for common measures
+			document['portions'] = self.query_gramweight(ndb_no)
+
+			# Add langual (thesaurus for the food item) info to document
+			document['langual'] = self.query_langual(ndb_no)
+
+			# Add footnote info
+			document['footnotes'] = self.query_footnote(ndb_no)
 
 			print document
 			# Insert into mongo collection
-			break		
+			
+
+	def query_gramweight(self, ndb_no):	
+		'''Query the nutrient db for gram weight info based on the food's unique ndb number'''
+
+		# Get gram weight for the food
+		return [{
+			'amount': gramweight['Amount'],
+			'unit': gramweight['Msre_Desc'],
+			'grams': gramweight['Gm_Wgt']
+		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no])]
+
+	def query_footnote(self, ndb_no):	
+		'''Query the nutrient db for footnote info based on the food's unique ndb number'''
+
+		# Get all footnotes for the food
+		return [footnote for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no])]
+
+	def query_langual(self, ndb_no):	
+		'''Query the nutrient db for langual description info based on the food's unique ndb number'''
+
+		# Init empty list to store the langual
+		thesaurus = []
+
+		# Get language variants for the food
+		for langual in self.database.execute('''
+			select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code and langual.NDB_No = ?''', [ndb_no]):
+			thesaurus.append(langual['Description'])
+
+		# Return the langual description info
+		return thesaurus
+
+	def query_nutrients(self, ndb_no):
+		'''Query the nutrient db for nutrients info based on the food's unique ndb number'''
+
+		# Init empty list to store nutrients
+		nutrients = []
+
+		# Get all the nutrients in the food
+		for nutrient in self.database.execute('''
+			select * from nut_data, nutr_def 
+			left join src_cd on nut_data.Src_Cd = src_cd.Src_Cd
+			left join deriv_cd on nut_data.Deriv_Cd = deriv_cd.Deriv_Cd
+			where nut_data.Nutr_No = nutr_def.Nutr_No and nut_data.NDB_No = ?''', [ndb_no]): 
+			
+			# Get the sources of nutrient data
+			source_ids = [source['DataSrc_ID'] for source in self.database.execute(''' 
+				select * from datsrcln where NDB_No = ? and Nutr_No = ?''', [ndb_no, nutrient['Nutr_No']])]
+
+			# Filter out the extra id numbers
+			nutrient_filtered = {
+				'code': nutrient['Nutr_No'],
+				'name': nutrient['NutrDesc'],
+				'abbr': nutrient['Tagname'],
+				'value': nutrient['Nutr_Val'],
+				'units': nutrient['Units'],
+				'rounded_to': nutrient['Num_Dec'],
+				'imputed_from': nutrient['Ref_NDB_No'],
+				'is_additive': nutrient['Add_Nutr_Mark'],
+				'last_modified': {
+					'month': nutrient['AddMod_Date'][0:2],
+					'year': nutrient['AddMod_Date'][3:],
+					'orig': nutrient['AddMod_Date']
+				},
+				'confidence': nutrient['CC'],
+				'meta': {
+					'sources': source_ids,
+					'source_type': nutrient['SrcCd_Desc'],
+					'derivation': nutrient['Deriv_Desc'],
+					'studies': nutrient['Num_Studies'],
+					'data_points': nutrient['Num_Data_Pts'],
+					'std_error': nutrient['Std_Error'],
+					'minval': nutrient['Min'],
+					'maxval': nutrient['Max'],
+					'degrees_of_freedom': nutrient['DF'],
+					'lower_error': nutrient['Low_EB'],
+					'upper_error': nutrient['Up_EB'],
+					'stat_comments': nutrient['Stat_cmt']
+				}
+			}
+
+			# Add filtered nutrient info to list of nutrients
+			nutrients.append(nutrient_filtered)
+
+		# Return all nutrients
+		return nutrients
 
 	def has_data(self):
 		"""Queries the database to see if there is any data in it."""
@@ -228,6 +315,7 @@ def main():
 
 	# Export each food item as json document into a mongodb
 	if args['mongo']:
+		print "Trying mongo export"
 		nutrients.export_mongo(pymongo.MongoClient('localhost', 27017))
 
 # Only execute if calling file directly
