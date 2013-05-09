@@ -3,6 +3,7 @@
 
 import os
 import sys
+import json
 import sqlite3
 import argparse
 import pymongo
@@ -68,8 +69,8 @@ class NutrientDB:
 									(NDB_No, Nutr_No, DataSrc_ID);
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 	
-	def export_mongo(self, client):		
-		"""Export nutrient data as json into mongodb"""	
+	def convert_to_documents(self, mongo_client=None, mongo_db=None, mongo_collection=None):		
+		"""Converts the nutrient database into a json document. Optional inserts into a mongo collection"""	
 
 		# Iterate through each food item and build a full nutrient json document
 		for food in self.database.execute('''
@@ -118,9 +119,17 @@ class NutrientDB:
 			# Add footnote info
 			document['footnotes'] = self.query_footnote(ndb_no)
 
-			print document
-			# Insert into mongo collection
-			
+			# Has user passed info to insert into mongo collection
+			if (mongo_client and mongo_db and mongo_collection):
+				print "Adding to mongo food#: " +  document['ndb_no']
+
+				# Get refrence to colleciton we want to add the documents to
+				collection = mongo_client[mongo_db][mongo_collection]
+
+				# Upsert document into collection 
+				collection.update({'ndb_no': document['ndb_no']}, document, upsert=True)
+			else:
+				print json.dumps(document)
 
 	def query_gramweight(self, ndb_no):	
 		'''Query the nutrient db for gram weight info based on the food's unique ndb number'''
@@ -136,7 +145,11 @@ class NutrientDB:
 		'''Query the nutrient db for footnote info based on the food's unique ndb number'''
 
 		# Get all footnotes for the food
-		return [footnote for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no])]
+		return [{
+			'nutrient_code': footnote['Nutr_No'],
+			'type': footnote['Footnt_Typ'],
+			'text': footnote['Footnt_Txt']
+		} for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no])]
 
 	def query_langual(self, ndb_no):	
 		'''Query the nutrient db for langual description info based on the food's unique ndb number'''
@@ -280,7 +293,7 @@ def main():
 	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data we skip flat file parsing. (default: False)')
-	parser.add_argument('-m', '--mongo', dest='mongo', action='store_true', help='Flag that tells whether to try and export data into a mongo db collection.')
+	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Flag that tells whether to try and export data into document format.')
 
 	# Parse the arguments
 	args = vars(parser.parse_args())
@@ -314,9 +327,8 @@ def main():
 		nutrients.refresh(path + 'DATSRCLN.txt', 'datsrcln')
 
 	# Export each food item as json document into a mongodb
-	if args['mongo']:
-		print "Trying mongo export"
-		nutrients.export_mongo(pymongo.MongoClient('localhost', 27017))
+	if args['export']:
+		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient('localhost', 27017), mongo_db='recipenet', mongo_collection='ingredients')
 
 # Only execute if calling file directly
 if __name__=="__main__":
