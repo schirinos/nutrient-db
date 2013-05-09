@@ -40,6 +40,8 @@ To export the data to a mongodb you must provide the following options. Any miss
 
 The program will always try an upsert based on the NDB_No of the food item. That means you can safely run the script multiple times to refresh existing info.
 
+Ex: <pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
+
 ##### --mhost 
 
 The hostname of the mongo instance.
@@ -55,5 +57,3 @@ Name of the mongo database to connect to.
 ##### --mcoll
 
 Name of the collection to insert the documents into.
-
-Ex: <pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
