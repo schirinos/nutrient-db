@@ -23,7 +23,7 @@ Command line options are available to help export the information into json form
 
 Force recreation of SQLite database from flat files. Use this option to re-parse the data from the flat files and create a new database file. Useful if the database gets corrupted, a previous parse failed to complete or there are changes to the flat files you want to capture in the database.
 
-Ex: <pre><code>python nutrient.py -f</code></pre>
+<pre><code>python nutrient.py -f</code></pre>
 
 #### Export data as json
 ##### -e 
@@ -40,7 +40,7 @@ To export the data to a mongodb you must provide the following options. Any miss
 
 The program will always try an upsert based on the NDB_No of the food item. That means you can safely run the script multiple times to refresh existing info.
 
-Ex: <pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
+<pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
 
 ##### --mhost 
 
