@@ -57,3 +57,9 @@ Name of the mongo database to connect to.
 ##### --mcoll
 
 Name of the collection to insert the documents into.
+
+
+Notes
+-----------------
+
+Included in the repo is a fully parsed SQLite database of USDA sr25 data in the file *nutrients.db*. The file is about 50MB.
