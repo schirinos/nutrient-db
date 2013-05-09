@@ -16,6 +16,9 @@ class NutrientDB:
 		# Connect to sqlite database
 		self.database = sqlite3.connect(database_name)
 
+		# Add enhanced rows to connection
+		self.database.row_factory = sqlite3.Row
+
 		# Create table statements
 		self.create_table_stmt = {}
 		self.create_table_stmt["food_des"] = '''DROP TABLE IF EXISTS food_des; CREATE TABLE food_des 
@@ -107,7 +110,11 @@ class NutrientDB:
 				pass
 
 			# Store info in a dictionry that we will insert into mongo
-			document = { "description": food['Long_Desc']}
+			document = { 
+				"description": food['Long_Desc'],
+				"short_description": food['Shrt_Desc'],
+				'group': food['FdGrp_Desc']
+			}
 
 			print document
 			# Insert into mongo collection
