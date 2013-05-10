@@ -160,7 +160,7 @@ class NutrientDB:
 		# Get language variants for the food
 		for langual in self.database.execute('''
 			select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code and langual.NDB_No = ?''', [ndb_no]):
-			thesaurus.append(langual['Description'])
+			thesaurus.append({'code': langual['Factor_Code'], 'description': langual['Description']})
 
 		# Return the langual description info
 		return thesaurus
