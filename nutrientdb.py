@@ -292,8 +292,12 @@ def main():
 	# Add arguments
 	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
-	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data we skip flat file parsing. (default: False)')
-	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Flag that tells whether to try and export data into document format.')
+	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
+	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
+	parser.add_argument('--mhost', dest='mhost', help='Mongo hostname.', default='localhost')
+	parser.add_argument('--mport', dest='mport', help='Mongo port.', default=27017)
+	parser.add_argument('--mdb', dest='mdb', help='Mongo database to connect to.')
+	parser.add_argument('--mcoll', dest='mcoll', help='Mongo collection to export data to.')
 
 	# Parse the arguments
 	args = vars(parser.parse_args())
@@ -328,7 +332,10 @@ def main():
 
 	# Export each food item as json document into a mongodb
 	if args['export']:
-		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient('localhost', 27017), mongo_db='recipenet', mongo_collection='ingredients')
+		nutrients.convert_to_documents()
+	elif (args['mhost'] and args['mport'] and args['mdb'] and args['mcoll']):
+		# Export documents to mongo instance
+		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient(args['mhost'], args['mport']), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
 
 # Only execute if calling file directly
 if __name__=="__main__":

@@ -1,7 +1,7 @@
 nutrient-db
 ===========
 
-Nutrient-db is a program to convert the USDA National Nutrient Database for Standard Reference from the flat files they provide into a relational database and optional a collection of json documents.
+Nutrient-db is a program to convert the USDA National Nutrient Database for Standard Reference (http://www.ars.usda.gov/ba/bhnrc/ndl) from the flat files they provide into a relational database and optional a collection of json documents.
 
 Usage
 -----------------
@@ -18,15 +18,23 @@ Command line options are available to help export the information into json form
 
 ### Command line options
 
+#### Path to flat files
+##### -p, --path [default: data/sr25]
+
+The path with the flat files to be parsed are located.
+
+<pre><code>python nutrient.py -p data/sr25</code></pre>
+
+
 #### Force re-parse 
-##### -f 
+##### -f, --force
 
 Force recreation of SQLite database from flat files. Use this option to re-parse the data from the flat files and create a new database file. Useful if the database gets corrupted, a previous parse failed to complete or there are changes to the flat files you want to capture in the database.
 
 <pre><code>python nutrient.py -f</code></pre>
 
 #### Export data as json
-##### -e 
+##### -e, --export 
 
 Export the data as json by printing out each document to the console. The format of the json is a custom schema where each json document represents a unqiue food item from the food descriptions table. All other information is attached to these individual documents.
 
@@ -42,11 +50,11 @@ The program will always try an upsert based on the NDB_No of the food item. That
 
 <pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
 
-##### --mhost 
+##### --mhost [default: localhost]
 
 The hostname of the mongo instance.
 
-##### --mport [defaults to 27017 if not provided]
+##### --mport [default: 27017]
 
 The port of the mongo instance.
 
@@ -59,7 +67,16 @@ Name of the mongo database to connect to.
 Name of the collection to insert the documents into.
 
 
-Notes
+Notes on Data
 -----------------
 
-Included in the repo is a fully parsed SQLite database of USDA sr25 data in the file *nutrients.db*. The file is about 50MB.
+The **data** directory stores the flat files to be parsed in subfolders for each full release of the USDA data. If you want to parse a different data set you can add it under a subfolder in this directory and specify the path to the files as a command line option. The program looks for a specific set of files as defined by the USDA schema. If any of these files are incorrectly named or missing parsing will fail. 
+
+The schema between releases may change. The program is designed for sr25. Modifications may be needed to the program for reading previous release schemas or ones in the future.
+
+USDA National Nutrient Database for Standard Reference (http://www.ars.usda.gov/ba/bhnrc/ndl)
+
+nutrients.db
+-----------------
+
+This file in the repo is a fully parsed SQLite database of USDA sr25 data in the file *nutrients.db*. The file is about 50MB.
