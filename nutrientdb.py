@@ -85,10 +85,17 @@ class NutrientDB:
 				'manufacturer': food['ManufacName'],
 				"name": {
 					"long": food['Long_Desc'],
-					'common': food['ComName'],
+					'common': [],
 					'sci': food['SciName']
 				}
 			}
+
+			# Split common names by comma to get an array
+			comm_names = [com_name for com_name in food['ComName'].split(',') if com_name != '']
+			document['name']['common'] = document['name']['common'] + comm_names
+
+			# We also append the langual food source description as other common names of the food
+			document['name']['common'] = document['name']['common'] + self.query_langual_foodsource(ndb_no)
 
 			# Add nutrient info
 			document['nutrients'] = self.query_nutrients(ndb_no)
@@ -96,12 +103,9 @@ class NutrientDB:
 			# Add portion gram converstion weights for common measures
 			document['portions'] = self.query_gramweight(ndb_no)
 
-			# Add langual (thesaurus for the food item) info to document
-			document['langual'] = self.query_langual(ndb_no)
-
 			# Put all other data into a meta field
 			document['meta']  = {
-				'ndb_no': ndb_no,
+				'ndb_no': int(ndb_no),
 				'nitrogen_factor': food['N_Factor'],
 				'protein_factor': food['Pro_Factor'],
 				'fat_factor': food['Fat_Factor'],
@@ -109,18 +113,19 @@ class NutrientDB:
 				'fndds_survey': food['Survey'],
 				'ref_desc': food['Ref_desc'],
 				'ref_per': food['Refuse'],
-				'footnotes': self.query_footnote(ndb_no)
+				'footnotes': self.query_footnote(ndb_no),
+				'langual': self.query_langual(ndb_no)
 			}
 
 			# Has user passed info to insert into mongo collection
 			if (mongo_client and mongo_db and mongo_collection):
-				print "Adding to mongo food#: " +  document['ndb_no']
+				print "Adding to mongo food#: " +  str(document['meta']['ndb_no'])
 
 				# Get refrence to colleciton we want to add the documents to
 				collection = mongo_client[mongo_db][mongo_collection]
 
 				# Upsert document into collection 
-				collection.update({'ndb_no': document['ndb_no']}, document, upsert=True)
+				collection.update({'meta.ndb_no': document['meta']['ndb_no']}, document, upsert=True)
 			else:
 				print json.dumps(document)
 
@@ -152,8 +157,26 @@ class NutrientDB:
 
 		# Get language variants for the food
 		for langual in self.database.execute('''
-			select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code and langual.NDB_No = ?''', [ndb_no]):
+			select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code
+			and langual.Factor_Code not like 'B%'
+			and langual.NDB_No = ?''', [ndb_no]):
 			thesaurus.append({'code': langual['Factor_Code'], 'description': langual['Description']})
+
+		# Return the langual description info
+		return thesaurus
+
+	def query_langual_foodsource(self, ndb_no):	
+		'''Query the nutrient db for the "food source" langual info based on the food's unique ndb number and convert into array.'''
+
+		# Init empty list to store the langual
+		thesaurus = []
+
+		# Get language variants for the food, we only get the languals starting with A,B,C
+		for langual in self.database.execute('''
+			select * from langual, langdesc where langual.Factor_Code = langdesc.Factor_Code 
+			and langual.Factor_Code like 'B%'
+			and langual.NDB_No = ?''', [ndb_no]):
+			thesaurus.append(langual['Description'])
 
 		# Return the langual description info
 		return thesaurus
@@ -284,8 +307,8 @@ def main():
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
 	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
-	parser.add_argument('--mhost', dest='mhost', help='Mongo hostname.', default='localhost')
-	parser.add_argument('--mport', dest='mport', help='Mongo port.', default=27017)
+	parser.add_argument('--mhost', dest='mhost', help='Mongo hostname. Defaults to localhost.', default='localhost')
+	parser.add_argument('--mport', dest='mport', help='Mongo port. Defaults to 27017.', default=27017)
 	parser.add_argument('--mdb', dest='mdb', help='Mongo database to connect to.')
 	parser.add_argument('--mcoll', dest='mcoll', help='Mongo collection to export data to.')
 
