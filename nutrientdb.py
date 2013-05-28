@@ -70,7 +70,7 @@ class NutrientDB:
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 	
 	def convert_to_documents(self, mongo_client=None, mongo_db=None, mongo_collection=None):		
-		"""Converts the nutrient database into a json document. Optional inserts into a mongo collection"""	
+		"""Converts the nutrient database into a json document. Optionally inserts into a mongo collection"""	
 
 		# Iterate through each food item and build a full nutrient json document
 		for food in self.database.execute('''
@@ -81,29 +81,12 @@ class NutrientDB:
 
 			# Store base food info as a dictionary (we will later insert this document into mongo)
 			document = { 
-				"ndb_no": food['NDB_No'],
-				"description": {
-					"short": food['Shrt_Desc'],
-					"long": food['Long_Desc'],
-					'common': food['ComName'],
-					'scientific': food['SciName']
-				},
-				'refuse':{
-					'description': food['Ref_desc'],
-					'percentage': food['Refuse']
-				},
 				'group': food['FdGrp_Desc'],
 				'manufacturer': food['ManufacName'],
-				'factors': {
-					'nitrogen': food['N_Factor'],
-					'protein': food['Pro_Factor'],
-					'fat': food['Fat_Factor'],
-					'carb': food['CHO_Factor']
-				},
-				'meta': {
-					'usda': {
-						'fndds_survey': food['Survey']
-					}
+				"name": {
+					"long": food['Long_Desc'],
+					'common': food['ComName'],
+					'sci': food['SciName']
 				}
 			}
 
@@ -116,8 +99,18 @@ class NutrientDB:
 			# Add langual (thesaurus for the food item) info to document
 			document['langual'] = self.query_langual(ndb_no)
 
-			# Add footnote info
-			document['footnotes'] = self.query_footnote(ndb_no)
+			# Put all other data into a meta field
+			document['meta']  = {
+				'ndb_no': ndb_no,
+				'nitrogen_factor': food['N_Factor'],
+				'protein_factor': food['Pro_Factor'],
+				'fat_factor': food['Fat_Factor'],
+				'carb_factor': food['CHO_Factor'],
+				'fndds_survey': food['Survey'],
+				'ref_desc': food['Ref_desc'],
+				'ref_per': food['Refuse'],
+				'footnotes': self.query_footnote(ndb_no)
+			}
 
 			# Has user passed info to insert into mongo collection
 			if (mongo_client and mongo_db and mongo_collection):
@@ -136,9 +129,9 @@ class NutrientDB:
 
 		# Get gram weight for the food
 		return [{
-			'amount': gramweight['Amount'],
+			'amt': gramweight['Amount'],
 			'unit': gramweight['Msre_Desc'],
-			'grams': gramweight['Gm_Wgt']
+			'g': gramweight['Gm_Wgt']
 		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no])]
 
 	def query_footnote(self, ndb_no):	
@@ -146,7 +139,7 @@ class NutrientDB:
 
 		# Get all footnotes for the food
 		return [{
-			'nutrient_code': footnote['Nutr_No'],
+			'n_code': footnote['Nutr_No'],
 			'type': footnote['Footnt_Typ'],
 			'text': footnote['Footnt_Txt']
 		} for footnote in self.database.execute('''select * from footnote where footnote.NDB_No = ?''', [ndb_no])]
@@ -189,28 +182,25 @@ class NutrientDB:
 				'abbr': nutrient['Tagname'],
 				'value': nutrient['Nutr_Val'],
 				'units': nutrient['Units'],
-				'rounded_to': nutrient['Num_Dec'],
-				'imputed_from': nutrient['Ref_NDB_No'],
-				'is_additive': nutrient['Add_Nutr_Mark'],
-				'last_modified': {
-					'month': nutrient['AddMod_Date'][0:2],
-					'year': nutrient['AddMod_Date'][3:],
-					'orig': nutrient['AddMod_Date']
-				},
-				'confidence': nutrient['CC'],
 				'meta': {
-					'sources': source_ids,
-					'source_type': nutrient['SrcCd_Desc'],
-					'derivation': nutrient['Deriv_Desc'],
-					'studies': nutrient['Num_Studies'],
-					'data_points': nutrient['Num_Data_Pts'],
+					'imputed': nutrient['Ref_NDB_No'],
+					'is_add': nutrient['Add_Nutr_Mark'],
+					'rounded': nutrient['Num_Dec'],
+					'conf': nutrient['CC'],
+					'mod_month': nutrient['AddMod_Date'][0:2],
+					'mod_year': nutrient['AddMod_Date'][3:],
+					'lower_error': nutrient['Low_EB'],
+					'upper_error': nutrient['Up_EB'],
 					'std_error': nutrient['Std_Error'],
+					'data_points': nutrient['Num_Data_Pts'],
 					'minval': nutrient['Min'],
 					'maxval': nutrient['Max'],
 					'degrees_of_freedom': nutrient['DF'],
-					'lower_error': nutrient['Low_EB'],
-					'upper_error': nutrient['Up_EB'],
-					'stat_comments': nutrient['Stat_cmt']
+					'stat_comments': nutrient['Stat_cmt'],
+					'sources': source_ids,
+					'source_type': nutrient['SrcCd_Desc'],
+					'derivation': nutrient['Deriv_Desc'],
+					'studies': nutrient['Num_Studies']
 				}
 			}
 
