@@ -1,0 +1,15 @@
+{
+    "name": "schirinos/nutrient-db",
+    "type": "library",
+    "description": "A program to convert USDA nutrient database into various formats",
+    "keywords": ["USDA", "nutrient"],
+    "homepage": "https://github.com/schirinos/nutrient-db",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sigfrido Chirinos",
+            "homepage": "https://github.com/schirinos"
+        }
+    ]
+
+}
