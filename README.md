@@ -8,7 +8,7 @@ Usage
 
 To generate an SQLite database file from the flat files included in the repo run: 
 
-<pre><code>python nutrient.py</code></pre>
+<pre><code>python nutrientdb.py</code></pre>
 
 By default it will look in the **data/sr25** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
 
@@ -23,7 +23,7 @@ Command line options are available to help export the information into json form
 
 The path with the flat files to be parsed are located.
 
-<pre><code>python nutrient.py -p data/sr25</code></pre>
+<pre><code>python nutrientdb.py -p data/sr25</code></pre>
 
 
 #### Force re-parse 
@@ -31,7 +31,7 @@ The path with the flat files to be parsed are located.
 
 Force recreation of SQLite database from flat files. Use this option to re-parse the data from the flat files and create a new database file. Useful if the database gets corrupted, a previous parse failed to complete or there are changes to the flat files you want to capture in the database.
 
-<pre><code>python nutrient.py -f</code></pre>
+<pre><code>python nutrientdb.py -f</code></pre>
 
 #### Export data as json
 ##### -e, --export 
@@ -40,7 +40,7 @@ Export the data as json by printing out each document to the console. The format
 
 Since the program prints to standard out by defautl you can redirect the output to a file, for example:
 
-<pre><code>python nutrient.py -e > nutrients.json</code></pre>
+<pre><code>python nutrientdb.py -e > nutrients.json</code></pre>
 
 #### Export to mongo
 
@@ -48,7 +48,7 @@ To export the data to a mongodb you must provide the following options. Any miss
 
 The program will always try an upsert based on the NDB_No of the food item. That means you can safely run the script multiple times to refresh existing info.
 
-<pre><code>python nutrient.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
+<pre><code>python nutrientdb.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
 
 ##### --mhost [default: localhost]
 
