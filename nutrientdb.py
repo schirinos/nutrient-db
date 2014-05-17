@@ -348,7 +348,7 @@ def main():
 		nutrients.convert_to_documents()
 	elif (args['mhost'] and args['mport'] and args['mdb'] and args['mcoll']):
 		# Export documents to mongo instance
-		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient(args['mhost'], args['mport']), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
+		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient(args['mhost'], int(args['mport'])), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
 
 # Only execute if calling file directly
 if __name__=="__main__":
