@@ -10,7 +10,7 @@ To generate an SQLite database file from the flat files included in the repo run
 
 <pre><code>python nutrientdb.py</code></pre>
 
-By default it will look in the **data/sr25** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
+By default it will look in the **data/sr28** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
 
 If the *nutrients.db* file already exists and is a valid SQLite database with partial nutrient data in it the script will think you have already completed the parsing of the flat files and not create a new database file. To re-parse the flat files you need to pass the *-f* option to force recreation of the database file.
 
@@ -19,11 +19,11 @@ Command line options are available to help export the information into json form
 ### Command line options
 
 #### Path to flat files
-##### -p, --path [default: data/sr25]
+##### -p, --path [default: data/sr28]
 
 The path with the flat files to be parsed are located.
 
-<pre><code>python nutrientdb.py -p data/sr25</code></pre>
+<pre><code>python nutrientdb.py -p data/sr28</code></pre>
 
 
 #### Force re-parse 
@@ -72,11 +72,11 @@ Notes on Data
 
 The **data** directory stores the flat files to be parsed in subfolders for each full release of the USDA data. If you want to parse a different data set you can add it under a subfolder in this directory and specify the path to the files as a command line option. The program looks for a specific set of files as defined by the USDA schema. If any of these files are incorrectly named or missing parsing will fail. 
 
-The schema between releases may change. The program is designed for sr25. Modifications may be needed to the program for reading previous release schemas or ones in the future.
+The schema between releases may change. The program is designed for sr28. Modifications may be needed to the program for reading previous release schemas or ones in the future.
 
 USDA National Nutrient Database for Standard Reference (http://www.ars.usda.gov/ba/bhnrc/ndl)
 
 nutrients.db
 -----------------
 
-This file in the repo is a fully parsed SQLite database of USDA sr25 data in the file *nutrients.db*. The file is about 50MB.
+This file in the repo is a fully parsed SQLite database of USDA sr28 data in the file *nutrients.db*. The file is about 50MB.
