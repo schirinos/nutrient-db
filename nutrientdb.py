@@ -105,7 +105,7 @@ class NutrientDB:
 
 			# Put all other data into a meta field
 			document['meta']  = {
-				'ndb_no': int(ndb_no),
+				'ndb_no': ndb_no,
 				'nitrogen_factor': food['N_Factor'],
 				'protein_factor': food['Pro_Factor'],
 				'fat_factor': food['Fat_Factor'],
