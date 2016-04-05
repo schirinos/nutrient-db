@@ -141,7 +141,7 @@ class NutrientDB:
 			'amt': gramweight['Amount'],
 			'unit': gramweight['Msre_Desc'],
 			'g': gramweight['Gm_Wgt']
-		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no])]
+		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ? order by weight.Seq''', [ndb_no])]
 
 	def query_footnote(self, ndb_no):	
 		'''Query the nutrient db for footnote info based on the food's unique ndb number'''
