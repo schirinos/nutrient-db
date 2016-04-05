@@ -69,7 +69,21 @@ class NutrientDB:
 									(NDB_No, Nutr_No, DataSrc_ID);
 									CREATE INDEX datsrcln_NDB_No_idx ON datsrcln (NDB_No)'''
 	
-	def convert_to_documents(self, mongo_client=None, mongo_db=None, mongo_collection=None):		
+        def dump_to_mongo(mongo_client=None, mongo_db=None, mongo_collection=None):
+		for document in self.convert_to_documents():
+			print "Adding to mongo food#: " +  str(document['meta']['ndb_no'])
+
+			# Get refrence to colleciton we want to add the documents to
+			collection = mongo_client[mongo_db][mongo_collection]
+
+			# Upsert document into collection 
+			collection.update({'meta.ndb_no': document['meta']['ndb_no']}, document, upsert=True)
+
+	def dump_to_console(self):
+		for document in self.convert_to_documents():
+			print json.dumps(document)
+
+	def convert_to_documents(self):
 		"""Converts the nutrient database into a json document. Optionally inserts into a mongo collection"""	
 
 		# Iterate through each food item and build a full nutrient json document
@@ -117,17 +131,7 @@ class NutrientDB:
 				'langual': self.query_langual(ndb_no)
 			}
 
-			# Has user passed info to insert into mongo collection
-			if (mongo_client and mongo_db and mongo_collection):
-				print "Adding to mongo food#: " +  str(document['meta']['ndb_no'])
-
-				# Get refrence to colleciton we want to add the documents to
-				collection = mongo_client[mongo_db][mongo_collection]
-
-				# Upsert document into collection 
-				collection.update({'meta.ndb_no': document['meta']['ndb_no']}, document, upsert=True)
-			else:
-				print json.dumps(document)
+                        yield document
 
 	def query_gramweight(self, ndb_no):	
 		'''Query the nutrient db for gram weight info based on the food's unique ndb number'''
@@ -137,7 +141,7 @@ class NutrientDB:
 			'amt': gramweight['Amount'],
 			'unit': gramweight['Msre_Desc'],
 			'g': gramweight['Gm_Wgt']
-		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no])]
+		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ? order by weight.Seq''', [ndb_no])]
 
 	def query_footnote(self, ndb_no):	
 		'''Query the nutrient db for footnote info based on the food's unique ndb number'''
@@ -303,7 +307,7 @@ def main():
 		Also provides options for exporting the nutrient data from the SQLite database into other formats.''')
 	
 	# Add arguments
-	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
+	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr28/)', default='data/sr28/')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
 	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
@@ -343,12 +347,10 @@ def main():
 		nutrients.refresh(path + 'DATA_SRC.txt', 'data_src')
 		nutrients.refresh(path + 'DATSRCLN.txt', 'datsrcln')
 
-	# Export each food item as json document into a mongodb
 	if args['export']:
-		nutrients.convert_to_documents()
+		nutrients.dump_to_console()
 	elif (args['mhost'] and args['mport'] and args['mdb'] and args['mcoll']):
-		# Export documents to mongo instance
-		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient(args['mhost'], int(args['mport'])), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
+		nutrients.dump_to_mongo(mongo_client=pymongo.MongoClient(args['mhost'], int(args['mport'])), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
 
 # Only execute if calling file directly
 if __name__=="__main__":
