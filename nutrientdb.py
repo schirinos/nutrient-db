@@ -105,7 +105,7 @@ class NutrientDB:
 
 			# Put all other data into a meta field
 			document['meta']  = {
-				'ndb_no': int(ndb_no),
+				'ndb_no': ndb_no,
 				'nitrogen_factor': food['N_Factor'],
 				'protein_factor': food['Pro_Factor'],
 				'fat_factor': food['Fat_Factor'],
@@ -137,7 +137,7 @@ class NutrientDB:
 			'amt': gramweight['Amount'],
 			'unit': gramweight['Msre_Desc'],
 			'g': gramweight['Gm_Wgt']
-		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ?''', [ndb_no])]
+		} for gramweight in self.database.execute('''select * from weight where weight.NDB_No = ? order by weight.Seq''', [ndb_no])]
 
 	def query_footnote(self, ndb_no):	
 		'''Query the nutrient db for footnote info based on the food's unique ndb number'''
@@ -303,7 +303,7 @@ def main():
 		Also provides options for exporting the nutrient data from the SQLite database into other formats.''')
 	
 	# Add arguments
-	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
+	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr28/)', default='data/sr28/')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
 	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
