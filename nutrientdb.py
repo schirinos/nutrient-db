@@ -24,7 +24,7 @@ class NutrientDB:
 		self.create_table_stmt = {}
 		self.create_table_stmt["food_des"] = '''DROP TABLE IF EXISTS food_des; CREATE TABLE food_des 
 									(NDB_No text, FdGrp_Cd, Long_Desc, Shrt_Desc, ComName, ManufacName, Survey, 
-									Ref_desc, Refuse, SciName, N_Factor, Pro_Factor, Fat_Factor, CHO_Factor);
+									Ref_desc, Refuse integer, SciName, N_Factor real, Pro_Factor real, Fat_Factor real, CHO_Factor real);
 									CREATE UNIQUE INDEX food_des_ndb_no_idx ON food_des (NDB_No)'''
 
 		self.create_table_stmt["fd_group"] = '''DROP TABLE IF EXISTS fd_group; CREATE TABLE fd_group (FdGrp_Cd, FdGrp_Desc);
@@ -37,12 +37,12 @@ class NutrientDB:
 									CREATE INDEX langdesc_Factor_Code_idx ON langdesc (Factor_Code)'''
 
 		self.create_table_stmt["nut_data"] = '''DROP TABLE IF EXISTS nut_data; CREATE TABLE nut_data 
-									(NDB_No text, Nutr_No, Nutr_Val, Num_Data_Pts, Std_Error, Src_Cd, Deriv_Cd, Ref_NDB_No, Add_Nutr_Mark, Num_Studies,
-										Min, Max, DF, Low_EB, Up_EB, Stat_cmt, AddMod_Date, CC);
+									(NDB_No text, Nutr_No, Nutr_Val real, Num_Data_Pts integer, Std_Error real, Src_Cd, Deriv_Cd, Ref_NDB_No, Add_Nutr_Mark, Num_Studies integer,
+										Min real, Max real, DF integer, Low_EB real, Up_EB real, Stat_cmt, AddMod_Date, CC);
 									CREATE INDEX nut_data_NDB_No_idx ON nut_data (NDB_No)'''
 
 		self.create_table_stmt["nutr_def"] = '''DROP TABLE IF EXISTS nutr_def; CREATE TABLE nutr_def 
-									(Nutr_No, Units, Tagname, NutrDesc, Num_Dec, SR_Order);
+									(Nutr_No, Units, Tagname, NutrDesc, Num_Dec, SR_Order integer);
 									CREATE UNIQUE INDEX nutr_def_Nutr_No_idx ON nutr_def (Nutr_No)'''
 
 		self.create_table_stmt["src_cd"] = '''DROP TABLE IF EXISTS src_cd; CREATE TABLE src_cd 
@@ -54,7 +54,7 @@ class NutrientDB:
 									CREATE UNIQUE INDEX deriv_cd_Deriv_Cd_idx ON deriv_cd (Deriv_Cd)'''
 
 		self.create_table_stmt["weight"] = '''DROP TABLE IF EXISTS weight; CREATE TABLE weight 
-									(NDB_No, Seq, Amount, Msre_Desc, Gm_Wgt, Num_Data_Pts, Std_Dev);
+									(NDB_No, Seq, Amount real, Msre_Desc, Gm_Wgt real, Num_Data_Pts integer, Std_Dev real);
 									CREATE INDEX weight_NDB_No_idx ON weight (NDB_No)'''
 
 		self.create_table_stmt["footnote"] = '''DROP TABLE IF EXISTS footnote; CREATE TABLE footnote 
