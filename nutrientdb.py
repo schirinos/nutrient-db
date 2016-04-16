@@ -303,7 +303,7 @@ def main():
 		Also provides options for exporting the nutrient data from the SQLite database into other formats.''')
 	
 	# Add arguments
-	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr25/)', default='data/sr25/')
+	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr28/)', default='data/sr28/')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
 	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
