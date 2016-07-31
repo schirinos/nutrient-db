@@ -10,7 +10,7 @@ To generate an SQLite database file from the flat files included in the repo run
 
 <pre><code>python3 nutrientdb.py</code></pre>
 
-By default it will look in the **data/sr25** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
+By default it will look in the **data/sr28** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
 
 If the *nutrients.db* file already exists and is a valid SQLite database with partial nutrient data in it the script will think you have already completed the parsing of the flat files and not create a new database file. To re-parse the flat files you need to pass the *-f* option to force recreation of the database file.
 
@@ -80,7 +80,7 @@ Notes on Data
 
 The **data** directory stores the flat files to be parsed in subfolders for each full release of the USDA data. If you want to parse a different data set you can add it under a subfolder in this directory and specify the path to the files as a command line option. The program looks for a specific set of files as defined by the USDA schema. If any of these files are incorrectly named or missing parsing will fail. 
 
-The schema between releases may change. The program is designed for sr25 -- sr28. Modifications may be needed to the program for downloading and/or parsing previous or future releases.
+The schema between releases may change. The program is designed for sr25--sr28. Modifications may be needed to the program for downloading and/or parsing previous or future releases.
 
 USDA National Nutrient Database for Standard Reference (http://www.ars.usda.gov/ba/bhnrc/ndl)
 
