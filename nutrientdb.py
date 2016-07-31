@@ -1,12 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Parses USDA flat files and converts them into an sqlite database"""
 
 import os
 import sys
 import json
-import sqlite3
 import argparse
-import pymongo
+from urllib.request import urlopen
+import zipfile
+from io import BytesIO
+
+import sqlite3
+
 
 class NutrientDB:
 	"""Parses USDA flat files and converts them into an sqlite database"""
@@ -119,7 +123,7 @@ class NutrientDB:
 
 			# Has user passed info to insert into mongo collection
 			if (mongo_client and mongo_db and mongo_collection):
-				print "Adding to mongo food#: " +  str(document['meta']['ndb_no'])
+				print("Adding to mongo food#: " +  str(document['meta']['ndb_no']))
 
 				# Get refrence to colleciton we want to add the documents to
 				collection = mongo_client[mongo_db][mongo_collection]
@@ -127,7 +131,7 @@ class NutrientDB:
 				# Upsert document into collection 
 				collection.update({'meta.ndb_no': document['meta']['ndb_no']}, document, upsert=True)
 			else:
-				print json.dumps(document)
+				print(json.dumps(document))
 
 	def query_gramweight(self, ndb_no):	
 		'''Query the nutrient db for gram weight info based on the food's unique ndb number'''
@@ -245,20 +249,23 @@ class NutrientDB:
 				return False
 			else:
 				return True
-		except sqlite3.OperationalError, e:
+		except sqlite3.OperationalError as e:
 			return False
-		except Exception, e:
+		except Exception as e:
 			return False
 		
 
 	def insert_row(self, cursor, datatype, fields):
 		"""Inserts a row of data into a specific table based on passed datatype"""
 
-		# Generate insert parameters string 
-		insert_params = "(" + ",".join(['?' for x in fields]) + ")"
+		fields = tuple(fields)
+
+		s = "insert into " + datatype + " values ("
+		s += ",".join( "?" * len(fields) )
+		s += ")"
 
 		# Execute insert
-		cursor.execute("insert into " + datatype + " values " + insert_params, fields)
+		cursor.execute(s, fields)
 
 	def refresh(self, filename, datatype):
 		"""Converts the passed file into database table. Drops the table and recreats it if it already exists."""
@@ -274,26 +281,44 @@ class NutrientDB:
 		sys.stdout.flush()
 
 		# Iterate through each line of the file
-		with open(filename, 'rU') as f:
-			for line in f:
-				# Break up fields using carets, remove whitespace and tilda text field surrounders
-				# We also need to decode the text from the Windows cp1252 encoding used by the USDA files
-				fields = [unicode(field.strip().strip('~'), "cp1252") for field in line.split('^')]
-				
-				# Insert row into database
-				self.insert_row(cursor, datatype, fields)
+		try:
+			with open(filename, encoding="cp1252") as f:
+				for line in f:
+					# Break up fields using carets, remove whitespace and tilda text field surrounders
+					fields = ( field.strip().strip('~') for field in line.split('^') )
+					
+					# Insert row into database
+					self.insert_row(cursor, datatype, fields)
+		except IOError as f:
+			print("ERROR: couldn't open flat data file '{}' for reading. Maybe try with the --download option?".format(filename), file=sys.stderr)
+			sys.exit(20)
 
 		# Commit changes to file
 		self.database.commit()
 
 		# Done message
-		print "Done"
+		print("Done")
 
 	def create_table(self, cursor, datatype):
 		"""Creates a new table in the database based on the datatype. Drops existing table if there is one."""
 		
 		# Create new table
 		cursor.executescript(self.create_table_stmt[datatype])
+
+def download_data_files(ver, path):
+	assert ver.startswith("sr")
+	assert ver[2:].isdigit()
+
+	nut_data_path = os.path.join(path, "NUT_DATA.txt")
+	if os.path.isfile(nut_data_path):
+		return
+
+	zip_url = "https://www.ars.usda.gov/SP2UserFiles/Place/12354500/Data/SR/SR28/dnload/" + ver + "asc.zip"
+
+	r = urlopen(zip_url)
+
+	with zipfile.ZipFile(BytesIO(r.read())) as z:
+		z.extractall(path)
 
 def main():
 	"""Parses USDA flat files and converts them into an sqlite database"""
@@ -304,6 +329,7 @@ def main():
 	
 	# Add arguments
 	parser.add_argument('-p', '--path', dest='path', help='The path to the nutrient data files. (default: data/sr28/)', default='data/sr28/')
+	parser.add_argument('-d', '--download', action="store_true", dest='download', help='Download the USDA database prior to processing')
 	parser.add_argument('-db', '--database', dest='database', help='The name of the SQLite file to read/write nutrient info. (default: nutrients.db)', default='nutrients.db')
 	parser.add_argument('-f', '--force', dest='force', action='store_true', help='Whether to force refresh of database file from flat file. If database file already exits and has some data in it we skip flat file parsing.')
 	parser.add_argument('-e', '--export', dest='export', action='store_true', help='Converts nutrient data into json documents and outputs to standard out, each document is seperated by a newline.')
@@ -326,9 +352,12 @@ def main():
 	# Initialize nutrient database
 	nutrients = NutrientDB(args['database'])
 
+	if args['download']:
+		download_data_files("sr28", path)
+
 	# Parse files
 	if (not nutrients.has_data()):
-		print "Refreshing database from flat files..."
+		print("Refreshing database from flat files...")
 		nutrients.refresh(path + 'FOOD_DES.txt', 'food_des')
 		nutrients.refresh(path + 'FD_GROUP.txt', 'fd_group')
 		nutrients.refresh(path + 'LANGUAL.txt', 'langual')
@@ -348,8 +377,15 @@ def main():
 		nutrients.convert_to_documents()
 	elif (args['mhost'] and args['mport'] and args['mdb'] and args['mcoll']):
 		# Export documents to mongo instance
+		try:
+			import pymongo
+		except ImportError:
+			print("pymongo is not installed. Try the export option to dump output as json instead.", file=sys.stderr)
+			sys.exit(20)
+
 		nutrients.convert_to_documents(mongo_client=pymongo.MongoClient(args['mhost'], int(args['mport'])), mongo_db=args['mdb'], mongo_collection=args['mcoll'])
 
 # Only execute if calling file directly
 if __name__=="__main__":
     main()
+
