@@ -8,7 +8,7 @@ Usage
 
 To generate an SQLite database file from the flat files included in the repo run: 
 
-<pre><code>python nutrientdb.py</code></pre>
+<pre><code>python3 nutrientdb.py</code></pre>
 
 By default it will look in the **data/sr25** directory for the required flat files and parse them into an SQLite database file named *nutrients.db* that will be stored in the current working directory. 
 
@@ -19,19 +19,27 @@ Command line options are available to help export the information into json form
 ### Command line options
 
 #### Path to flat files
-##### -p, --path [default: data/sr25]
+##### -p, --path [default: data/sr28]
 
 The path with the flat files to be parsed are located.
 
-<pre><code>python nutrientdb.py -p data/sr25</code></pre>
+<pre><code>python3 nutrientdb.py -p data/sr28</code></pre>
 
+
+#### Download
+##### -d, --download
+
+Downloads the required data files directly from the USDA site, and extracts them automatically, to the path specified (or defaulted to) by --path (see above)
+
+<pre><code>python3 nutrientdb.py -d</code></pre>
 
 #### Force re-parse 
 ##### -f, --force
 
 Force recreation of SQLite database from flat files. Use this option to re-parse the data from the flat files and create a new database file. Useful if the database gets corrupted, a previous parse failed to complete or there are changes to the flat files you want to capture in the database.
 
-<pre><code>python nutrientdb.py -f</code></pre>
+<pre><code>python3 nutrientdb.py -f</code></pre>
+
 
 #### Export data as json
 ##### -e, --export 
@@ -40,7 +48,7 @@ Export the data as json by printing out each document to the console. The format
 
 Since the program prints to standard out by defautl you can redirect the output to a file, for example:
 
-<pre><code>python nutrientdb.py -e > nutrients.json</code></pre>
+<pre><code>python3 nutrientdb.py -e > nutrients.json</code></pre>
 
 #### Export to mongo
 
@@ -48,7 +56,7 @@ To export the data to a mongodb you must provide the following options. Any miss
 
 The program will always try an upsert based on the NDB_No of the food item. That means you can safely run the script multiple times to refresh existing info.
 
-<pre><code>python nutrientdb.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
+<pre><code>python3 nutrientdb.py --mhost localhost --mport 27017 --mdb mydatabase --mcoll mycollection</code></pre>
 
 ##### --mhost [default: localhost]
 
@@ -72,11 +80,7 @@ Notes on Data
 
 The **data** directory stores the flat files to be parsed in subfolders for each full release of the USDA data. If you want to parse a different data set you can add it under a subfolder in this directory and specify the path to the files as a command line option. The program looks for a specific set of files as defined by the USDA schema. If any of these files are incorrectly named or missing parsing will fail. 
 
-The schema between releases may change. The program is designed for sr25. Modifications may be needed to the program for reading previous release schemas or ones in the future.
+The schema between releases may change. The program is designed for sr25 -- sr28. Modifications may be needed to the program for downloading and/or parsing previous or future releases.
 
 USDA National Nutrient Database for Standard Reference (http://www.ars.usda.gov/ba/bhnrc/ndl)
 
-nutrients.db
------------------
-
-This file in the repo is a fully parsed SQLite database of USDA sr25 data in the file *nutrients.db*. The file is about 50MB.
